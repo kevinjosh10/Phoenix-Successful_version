@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { BarChart3, Database, Link as LinkIcon, Hash } from 'lucide-react';
 import { motion } from 'framer-motion';
 

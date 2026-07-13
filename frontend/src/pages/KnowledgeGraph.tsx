@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react';
+
 import { 
   ReactFlow, 
   Controls, 
@@ -23,8 +23,8 @@ const initialEdges = [
 ];
 
 export const KnowledgeGraph = () => {
-  const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
-  const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
+  const [nodes, , onNodesChange] = useNodesState(initialNodes);
+  const [edges, , onEdgesChange] = useEdgesState(initialEdges);
 
   return (
     <div className="h-[800px] w-full glass-panel rounded-3xl overflow-hidden border border-card-border relative">
