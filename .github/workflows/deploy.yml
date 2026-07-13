@@ -62,6 +62,7 @@ jobs:
       run: |
         npm install
         npm run build
+        cp dist/index.html dist/404.html
         
     - name: Deploy to GitHub Pages
       uses: peaceiris/actions-gh-pages@v4
