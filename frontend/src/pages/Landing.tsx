@@ -44,15 +44,17 @@ export const Landing = () => {
           initial={{ scale: 0.9, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           transition={{ delay: 0.2, duration: 0.8 }}
-          className="inline-block mb-6 px-4 py-1.5 rounded-full border border-primary/30 bg-primary/10 text-primary text-sm font-medium tracking-wide"
+          className="inline-block mb-4 px-4 py-1.5 rounded-full border border-primary/30 bg-primary/10 text-primary text-sm font-medium tracking-wide uppercase"
         >
-          Project Phoenix
+          Version 1.0
         </motion.div>
         
-        <h1 className="text-6xl md:text-8xl font-bold tracking-tighter mb-8">
-          The Internet's <br />
-          <span className="text-gradient">Knowledge Rescue Engine</span>
+        <h1 className="text-8xl md:text-[150px] font-extrabold tracking-tighter mb-2 text-white drop-shadow-[0_0_30px_rgba(255,255,255,0.2)]">
+          PHOENIX
         </h1>
+        <h2 className="text-3xl md:text-5xl font-bold tracking-tight mb-8 text-gradient">
+          The Knowledge Rescue Engine
+        </h2>
         
         <p className="text-xl md:text-2xl text-muted-foreground mb-12 max-w-2xl mx-auto font-light">
           Transform forgotten documents into a living, interconnected AI brain. Upload once, discover forever.
