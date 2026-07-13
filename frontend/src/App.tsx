@@ -5,6 +5,7 @@ import { Dashboard } from './pages/Dashboard';
 import { DocumentUpload } from './pages/DocumentUpload';
 import { SemanticSearch } from './pages/SemanticSearch';
 import { KnowledgeGraph } from './pages/KnowledgeGraph';
+import { Documents } from './pages/Documents';
 
 function App() {
   return (
@@ -14,6 +15,7 @@ function App() {
           <Route path="/" element={<Landing />} />
           <Route path="/dashboard" element={<DashboardLayout><Dashboard /></DashboardLayout>} />
           <Route path="/upload" element={<DashboardLayout><DocumentUpload /></DashboardLayout>} />
+          <Route path="/documents" element={<DashboardLayout><Documents /></DashboardLayout>} />
           <Route path="/search" element={<DashboardLayout><SemanticSearch /></DashboardLayout>} />
           <Route path="/graph" element={<DashboardLayout><KnowledgeGraph /></DashboardLayout>} />
           {/* Add more routes here */}

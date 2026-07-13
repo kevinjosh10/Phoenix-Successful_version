@@ -2,25 +2,73 @@ import React, { useState } from 'react';
 import { Search, Sparkles, FileText, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
+import { ref, get } from 'firebase/database';
+import { rtdb } from '../services/firebase';
+
 export const SemanticSearch = () => {
   const [query, setQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   const [results, setResults] = useState<any[]>([]);
 
-  const handleSearch = (e: React.FormEvent) => {
+  const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!query.trim()) return;
     
     setIsSearching(true);
-    // Simulate API call
-    setTimeout(() => {
+    
+    try {
+      const docsRef = ref(rtdb, 'documents');
+      const snapshot = await get(docsRef);
+      
+      if (snapshot.exists()) {
+        const docs = snapshot.val();
+        const searchResults: any[] = [];
+        
+        Object.keys(docs).forEach((key) => {
+          const doc = docs[key];
+          if (!doc || doc.processingStatus !== 'completed') return;
+          
+          const searchString = query.toLowerCase();
+          const title = doc.title ? doc.title.toLowerCase() : '';
+          const keywords = doc.keywords ? doc.keywords.join(' ').toLowerCase() : '';
+          
+          let matchScore = 0;
+          if (title.includes(searchString)) matchScore += 50;
+          if (keywords.includes(searchString)) matchScore += 45;
+          
+          // Partial matches
+          searchString.split(' ').forEach(term => {
+            if (term.length > 3 && keywords.includes(term)) matchScore += 10;
+            if (term.length > 3 && title.includes(term)) matchScore += 15;
+          });
+          
+          if (matchScore > 0) {
+            searchResults.push({
+              id: key,
+              title: doc.title,
+              match: Math.min(99, Math.max(40, matchScore)), // Cap between 40-99%
+              type: doc.fileType,
+              snippet: doc.keywords ? `Keywords detected: ${doc.keywords.join(', ')}` : 'No keywords found.'
+            });
+          }
+        });
+        
+        // Sort by match score descending
+        searchResults.sort((a, b) => b.match - a.match);
+        
+        // Simulate minor network delay for UX
+        setTimeout(() => {
+          setResults(searchResults);
+          setIsSearching(false);
+        }, 1200);
+      } else {
+        setResults([]);
+        setIsSearching(false);
+      }
+    } catch (error) {
+      console.error("Search failed", error);
       setIsSearching(false);
-      setResults([
-        { id: 1, title: 'Q3 Financial Report.pdf', match: 98, type: 'PDF', snippet: 'The revenue increased by 45% in the renewable energy sector...' },
-        { id: 2, title: 'Climate Study 2025.csv', match: 85, type: 'CSV', snippet: 'Analysis of global temperature trends and agricultural impact...' },
-        { id: 3, title: 'Meeting Notes - Architecture.txt', match: 72, type: 'TXT', snippet: 'Discussion on implementing the new semantic search using FAISS...' },
-      ]);
-    }, 1500);
+    }
   };
 
   return (
