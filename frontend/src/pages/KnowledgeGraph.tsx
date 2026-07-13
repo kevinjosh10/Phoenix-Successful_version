@@ -1,5 +1,4 @@
-
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { 
   ReactFlow, 
   Controls, 
@@ -11,10 +10,13 @@ import {
 import '@xyflow/react/dist/style.css';
 import { ref, onValue } from 'firebase/database';
 import { rtdb } from '../services/firebase';
+import { motion, AnimatePresence } from 'framer-motion';
+import { X, FileText, Hash } from 'lucide-react';
 
 export const KnowledgeGraph = () => {
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
+  const [selectedNode, setSelectedNode] = useState<any | null>(null);
 
   useEffect(() => {
     const graphRef = ref(rtdb, 'graph/main');
@@ -49,27 +51,68 @@ export const KnowledgeGraph = () => {
 
   return (
     <div className="h-[800px] w-full glass-panel rounded-3xl overflow-hidden border border-card-border relative">
-      <div className="absolute top-6 left-6 z-10">
+      <div className="absolute top-6 left-6 z-10 pointer-events-none">
         <h2 className="text-2xl font-bold text-white mb-1">Knowledge Graph</h2>
         <p className="text-muted-foreground text-sm">Interactive view of document relationships</p>
       </div>
       
-      <div className="absolute bottom-6 left-6 z-10 flex gap-4">
-        <div className="flex items-center gap-2">
+      <div className="absolute bottom-6 left-6 z-10 flex gap-4 pointer-events-none">
+        <div className="flex items-center gap-2 bg-black/40 px-3 py-1.5 rounded-full backdrop-blur-md">
           <div className="w-3 h-3 rounded-full bg-blue-500" />
-          <span className="text-sm text-white">Documents</span>
+          <span className="text-sm text-white font-medium">Documents</span>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 bg-black/40 px-3 py-1.5 rounded-full backdrop-blur-md">
           <div className="w-3 h-3 rounded-full bg-purple-500" />
-          <span className="text-sm text-white">Keywords</span>
+          <span className="text-sm text-white font-medium">Keywords</span>
         </div>
       </div>
+
+      <AnimatePresence>
+        {selectedNode && (
+          <motion.div
+            initial={{ x: 400, opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            exit={{ x: 400, opacity: 0 }}
+            transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+            className="absolute top-6 right-6 z-20 w-80 bg-[#1e1e24]/90 backdrop-blur-xl rounded-2xl p-6 border border-white/10 shadow-2xl"
+          >
+            <div className="flex justify-between items-start mb-6">
+              <h3 className="text-xl font-bold text-white pr-4 leading-tight">{selectedNode.data.label}</h3>
+              <button onClick={() => setSelectedNode(null)} className="p-1 hover:bg-white/10 rounded-full transition-colors text-muted-foreground hover:text-white">
+                <X size={20} />
+              </button>
+            </div>
+            
+            <div className="space-y-4">
+              <div className="flex items-center gap-3 text-muted-foreground">
+                <div className="p-2 bg-white/5 rounded-lg text-primary">
+                  {selectedNode.id.startsWith('doc') ? <FileText size={18} /> : <Hash size={18} />}
+                </div>
+                <div className="text-sm font-medium">
+                  {selectedNode.id.startsWith('doc') ? 'Document Node' : 'Keyword Node'}
+                </div>
+              </div>
+              
+              <div className="p-4 bg-white/5 rounded-xl text-sm text-white/80 font-mono break-all">
+                <span className="font-semibold text-white/60">ID:</span> {selectedNode.id}
+              </div>
+              
+              <p className="text-sm text-muted-foreground pt-2 border-t border-white/5 leading-relaxed">
+                {selectedNode.id.startsWith('doc') 
+                  ? "This document was successfully processed and connected within the knowledge graph. Click on connected keywords to explore related documents." 
+                  : "This keyword connects multiple documents that share highly related contexts and topics within your dataset."}
+              </p>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <ReactFlow
         nodes={nodes}
         edges={edges}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
+        onNodeClick={(_, node) => setSelectedNode(node)}
         fitView
         className="bg-background/50"
       >

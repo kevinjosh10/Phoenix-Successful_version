@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
-import { FileText, Clock, Hash, CheckCircle, Database } from 'lucide-react';
+import { FileText, Clock, Hash, CheckCircle, Database, Trash2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ref, onValue } from 'firebase/database';
+import { ref, onValue, remove, get, update } from 'firebase/database';
 import { rtdb } from '../services/firebase';
 
 export const Documents = () => {
@@ -26,6 +26,27 @@ export const Documents = () => {
 
     return () => unsubscribe();
   }, []);
+
+  const handleDelete = async (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    try {
+      await remove(ref(rtdb, `documents/${id}`));
+      
+      const analyticsRef = ref(rtdb, 'analytics/main');
+      const snap = await get(analyticsRef);
+      if (snap.exists()) {
+        const data = snap.val();
+        await update(analyticsRef, {
+          totalUploads: Math.max(0, (data.totalUploads || 1) - 1),
+          processedDocuments: Math.max(0, (data.processedDocuments || 1) - 1),
+          keywordsExtracted: Math.max(0, (data.keywordsExtracted || 5) - 5),
+          knowledgeConnections: Math.max(0, (data.knowledgeConnections || 5) - 5),
+        });
+      }
+    } catch (err) {
+      console.error('Failed to delete document', err);
+    }
+  };
 
   return (
     <div className="max-w-7xl mx-auto space-y-8 pb-12">
@@ -54,67 +75,79 @@ export const Documents = () => {
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
           >
-            {documents.map((doc, idx) => (
-              <motion.div
-                key={doc.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: idx * 0.05 }}
-                className="glass-panel p-6 rounded-2xl group flex flex-col h-full hover:border-primary/50 transition-all duration-300"
-              >
-                <div className="flex justify-between items-start mb-4">
-                  <div className="p-3 bg-white/5 group-hover:bg-primary/10 group-hover:text-primary rounded-xl text-white transition-colors">
-                    <Database size={24} />
-                  </div>
-                  {doc.processingStatus === 'completed' ? (
-                    <div className="px-3 py-1 bg-green-500/10 text-green-400 text-xs font-medium rounded-full border border-green-500/20 flex items-center gap-1">
-                      <CheckCircle size={12} /> Ready
+            <AnimatePresence>
+              {documents.map((doc, idx) => (
+                <motion.div
+                  key={doc.id}
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.9 }}
+                  transition={{ delay: Math.min(idx * 0.05, 0.3) }}
+                  className="glass-panel p-6 rounded-2xl group flex flex-col h-full hover:border-primary/50 transition-all duration-300"
+                >
+                  <div className="flex justify-between items-start mb-4">
+                    <div className="p-3 bg-white/5 group-hover:bg-primary/10 group-hover:text-primary rounded-xl text-white transition-colors">
+                      <Database size={24} />
                     </div>
-                  ) : (
-                    <div className="px-3 py-1 bg-yellow-500/10 text-yellow-400 text-xs font-medium rounded-full border border-yellow-500/20">
-                      Processing
-                    </div>
-                  )}
-                </div>
-                
-                <h3 className="text-xl font-semibold text-white mb-2 line-clamp-2" title={doc.title}>
-                  {doc.title || doc.filename}
-                </h3>
-                
-                <div className="text-muted-foreground text-sm mb-6 flex flex-col gap-2">
-                  <div className="flex items-center gap-2">
-                    <FileText size={14} /> 
-                    {doc.fileType?.split('/')[1]?.toUpperCase() || 'DOCUMENT'} • {(doc.fileSize / 1024).toFixed(1)} KB
-                  </div>
-                  {doc.documentInsights?.reading_time_minutes && (
                     <div className="flex items-center gap-2">
-                      <Clock size={14} /> 
-                      ~{doc.documentInsights.reading_time_minutes} min read
+                      {doc.processingStatus === 'completed' ? (
+                        <div className="px-3 py-1 bg-green-500/10 text-green-400 text-xs font-medium rounded-full border border-green-500/20 flex items-center gap-1">
+                          <CheckCircle size={12} /> Ready
+                        </div>
+                      ) : (
+                        <div className="px-3 py-1 bg-yellow-500/10 text-yellow-400 text-xs font-medium rounded-full border border-yellow-500/20">
+                          Processing
+                        </div>
+                      )}
+                      <button 
+                        onClick={(e) => handleDelete(doc.id, e)}
+                        className="p-1.5 text-muted-foreground hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
+                        title="Delete document"
+                      >
+                        <Trash2 size={16} />
+                      </button>
                     </div>
-                  )}
-                </div>
+                  </div>
+                  
+                  <h3 className="text-xl font-semibold text-white mb-2 line-clamp-2" title={doc.title}>
+                    {doc.title || doc.filename}
+                  </h3>
+                  
+                  <div className="text-muted-foreground text-sm mb-6 flex flex-col gap-2">
+                    <div className="flex items-center gap-2">
+                      <FileText size={14} /> 
+                      {doc.fileType?.split('/')[1]?.toUpperCase() || 'DOCUMENT'} • {(doc.fileSize / 1024).toFixed(1)} KB
+                    </div>
+                    {doc.documentInsights?.reading_time_minutes && (
+                      <div className="flex items-center gap-2">
+                        <Clock size={14} /> 
+                        ~{doc.documentInsights.reading_time_minutes} min read
+                      </div>
+                    )}
+                  </div>
 
-                <div className="mt-auto pt-4 border-t border-white/5">
-                  <div className="flex items-center gap-2 mb-3 text-sm text-white font-medium">
-                    <Hash size={14} className="text-primary" /> Keywords Extracted
+                  <div className="mt-auto pt-4 border-t border-white/5">
+                    <div className="flex items-center gap-2 mb-3 text-sm text-white font-medium">
+                      <Hash size={14} className="text-primary" /> Keywords Extracted
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {doc.keywords ? doc.keywords.slice(0, 4).map((kw: string, i: number) => (
+                        <span key={i} className="px-2.5 py-1 bg-white/5 rounded-md text-xs font-medium text-muted-foreground">
+                          {kw}
+                        </span>
+                      )) : (
+                        <span className="text-xs text-muted-foreground italic">None found</span>
+                      )}
+                      {doc.keywords && doc.keywords.length > 4 && (
+                        <span className="px-2.5 py-1 bg-white/5 rounded-md text-xs font-medium text-muted-foreground">
+                          +{doc.keywords.length - 4}
+                        </span>
+                      )}
+                    </div>
                   </div>
-                  <div className="flex flex-wrap gap-2">
-                    {doc.keywords ? doc.keywords.slice(0, 4).map((kw: string, i: number) => (
-                      <span key={i} className="px-2.5 py-1 bg-white/5 rounded-md text-xs font-medium text-muted-foreground">
-                        {kw}
-                      </span>
-                    )) : (
-                      <span className="text-xs text-muted-foreground italic">None found</span>
-                    )}
-                    {doc.keywords && doc.keywords.length > 4 && (
-                      <span className="px-2.5 py-1 bg-white/5 rounded-md text-xs font-medium text-muted-foreground">
-                        +{doc.keywords.length - 4}
-                      </span>
-                    )}
-                  </div>
-                </div>
-              </motion.div>
-            ))}
+                </motion.div>
+              ))}
+            </AnimatePresence>
           </motion.div>
         ) : (
           <motion.div 
