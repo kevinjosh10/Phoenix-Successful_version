@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, Sparkles, FileText, ChevronRight } from 'lucide-react';
+import { Search, Sparkles, FileText, Download } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 import { ref, get } from 'firebase/database';
@@ -71,6 +71,27 @@ export const SemanticSearch = () => {
     }
   };
 
+  const handleDownload = (result: any) => {
+    // Generate file content for the downloaded file
+    const content = `Title: ${result.title}\n${result.snippet}\n\n[Project Phoenix Engine: File dynamically retrieved from Semantic Search Index]`;
+    const blob = new Blob([content], { type: result.type || 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    
+    const a = document.createElement('a');
+    a.href = url;
+    
+    let ext = '.txt';
+    if (result.type === 'text/csv') ext = '.csv';
+    else if (result.type === 'application/pdf') ext = '.pdf';
+    else if (result.type === 'application/json') ext = '.json';
+    
+    a.download = `${result.title.replace(/[^a-zA-Z0-9]/g, '_')}${ext}`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="max-w-4xl mx-auto space-y-8">
       <div className="text-center mb-12">
@@ -93,9 +114,11 @@ export const SemanticSearch = () => {
           />
           <button 
             type="submit"
-            className="px-6 py-3 bg-white text-black font-semibold rounded-xl hover:bg-gray-200 transition-colors flex items-center gap-2"
+            className="btn-premium px-6 py-3 bg-white text-black font-semibold rounded-xl"
           >
-            <Sparkles size={18} /> Search
+            <div className="flex items-center gap-2 relative z-10">
+              <Sparkles size={18} /> Search
+            </div>
           </button>
         </div>
       </form>
@@ -124,10 +147,11 @@ export const SemanticSearch = () => {
               {results.map((result, idx) => (
                 <motion.div
                   key={result.id}
+                  onClick={() => handleDownload(result)}
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: idx * 0.1 }}
-                  className="glass-panel p-6 rounded-2xl hover:bg-white/5 transition-colors cursor-pointer group flex items-start gap-4"
+                  className="glass-panel p-6 rounded-2xl hover:bg-white/5 hover:border-primary/50 transition-colors cursor-pointer group flex items-start gap-4"
                 >
                   <div className="p-3 bg-white/5 rounded-xl text-primary mt-1">
                     <FileText size={24} />
@@ -143,8 +167,8 @@ export const SemanticSearch = () => {
                       {result.snippet}
                     </p>
                   </div>
-                  <div className="self-center p-2 opacity-0 group-hover:opacity-100 transition-opacity -translate-x-4 group-hover:translate-x-0 text-white">
-                    <ChevronRight size={24} />
+                  <div className="self-center p-3 rounded-xl bg-white/5 opacity-0 group-hover:opacity-100 transition-all -translate-x-4 group-hover:translate-x-0 text-white hover:bg-primary hover:text-white">
+                    <Download size={20} />
                   </div>
                 </motion.div>
               ))}
