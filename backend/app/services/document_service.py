@@ -1,4 +1,4 @@
-from app.database.firestore import firestore_db
+from app.database.realtime_db import realtime_db
 from app.ai.processor import processor, vector_store, extract_keywords
 from app.models.domain import DocumentInsights
 import uuid
@@ -6,7 +6,7 @@ import uuid
 def process_document(doc_id: str, file_url: str, file_content: bytes, filename: str, file_type: str):
     try:
         # Update status to processing
-        firestore_db.update_document(doc_id, {"processingStatus": "processing"})
+        realtime_db.update_document(doc_id, {"processingStatus": "processing"})
         
         # 1. Extract text
         text = processor.extract_text(file_content, file_type, filename)
@@ -32,27 +32,27 @@ def process_document(doc_id: str, file_url: str, file_content: bytes, filename: 
             "keywords": keywords,
             "documentInsights": insights,
         }
-        firestore_db.update_document(doc_id, updates)
+        realtime_db.update_document(doc_id, updates)
         
         # 5. Update Analytics (simplified)
-        analytics = firestore_db.get_analytics()
+        analytics = realtime_db.get_analytics()
         analytics["totalUploads"] = analytics.get("totalUploads", 0) + 1
         
         doc_types = analytics.get("documentTypes", {})
         doc_types[file_type] = doc_types.get(file_type, 0) + 1
         analytics["documentTypes"] = doc_types
         
-        firestore_db.update_analytics(analytics)
+        realtime_db.update_analytics(analytics)
         
         # 6. Update Knowledge Graph (simplified logic)
         update_knowledge_graph(doc_id, filename, keywords)
 
     except Exception as e:
         print(f"Failed to process document {doc_id}: {e}")
-        firestore_db.update_document(doc_id, {"processingStatus": "failed"})
+        realtime_db.update_document(doc_id, {"processingStatus": "failed"})
 
 def update_knowledge_graph(doc_id: str, title: str, keywords: list[str]):
-    graph = firestore_db.get_graph()
+    graph = realtime_db.get_graph()
     nodes = graph.get("nodes", [])
     edges = graph.get("edges", [])
     
@@ -83,4 +83,4 @@ def update_knowledge_graph(doc_id: str, title: str, keywords: list[str]):
             "type": "has_keyword"
         })
         
-    firestore_db.update_graph({"nodes": nodes, "edges": edges})
+    realtime_db.update_graph({"nodes": nodes, "edges": edges})

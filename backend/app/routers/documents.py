@@ -1,5 +1,5 @@
 from fastapi import APIRouter, UploadFile, File, HTTPException, BackgroundTasks
-from app.database.firestore import firestore_db
+from app.database.realtime_db import realtime_db
 from app.firebase.storage import storage_client
 from app.models.domain import Document
 from app.services.document_service import process_document
@@ -28,7 +28,7 @@ async def upload_document(background_tasks: BackgroundTasks, file: UploadFile = 
             processingStatus="pending"
         ).model_dump()
         
-        doc_id = firestore_db.create_document(doc_data)
+        doc_id = realtime_db.create_document(doc_data)
         
         # 3. Trigger background processing (Phase 3)
         background_tasks.add_task(process_document, doc_id, file_url, content, file.filename, file.content_type)
@@ -40,11 +40,11 @@ async def upload_document(background_tasks: BackgroundTasks, file: UploadFile = 
 
 @router.get("/")
 def get_documents():
-    return firestore_db.get_all_documents()
+    return realtime_db.get_all_documents()
 
 @router.get("/{doc_id}")
 def get_document(doc_id: str):
-    doc = firestore_db.get_document(doc_id)
+    doc = realtime_db.get_document(doc_id)
     if not doc:
         raise HTTPException(status_code=404, detail="Document not found")
     return doc

@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Query
 from app.ai.processor import processor, vector_store
-from app.database.firestore import firestore_db
+from app.database.realtime_db import realtime_db
 
 router = APIRouter(prefix="/api/search", tags=["search"])
 
@@ -15,7 +15,7 @@ def semantic_search(q: str = Query(..., description="The search query string")):
     # Enrich with document details from Firestore
     enriched_results = []
     for res in results:
-        doc = firestore_db.get_document(res["doc_id"])
+        doc = realtime_db.get_document(res["doc_id"])
         if doc:
             doc["similarity"] = res["similarity"]
             enriched_results.append(doc)
